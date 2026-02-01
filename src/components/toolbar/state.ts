@@ -1,0 +1,40 @@
+import type { ToolbarState } from "../../types.js";
+
+export type { ToolbarState };
+export type SnapEdge = "top" | "bottom" | "left" | "right";
+
+const STORAGE_KEY = "shopify-grab-toolbar-state";
+
+export const loadToolbarState = (): ToolbarState | null => {
+  try {
+    const serializedToolbarState = localStorage.getItem(STORAGE_KEY);
+    if (!serializedToolbarState) return null;
+
+    const partialToolbarState = JSON.parse(
+      serializedToolbarState,
+    ) as Partial<ToolbarState>;
+    return {
+      edge: partialToolbarState.edge ?? "bottom",
+      ratio: partialToolbarState.ratio ?? 0.5,
+      collapsed: partialToolbarState.collapsed ?? false,
+      enabled: partialToolbarState.enabled ?? true,
+    };
+  } catch (error) {
+    console.warn(
+      "[shopify-grab] Failed to load toolbar state from localStorage:",
+      error,
+    );
+  }
+  return null;
+};
+
+export const saveToolbarState = (state: ToolbarState): void => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (error) {
+    console.warn(
+      "[shopify-grab] Failed to save toolbar state to localStorage:",
+      error,
+    );
+  }
+};

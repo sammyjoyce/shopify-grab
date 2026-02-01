@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shopify Grab - Test Page</title>
+  <script src="../dist/index.global.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #333; }
+
+    /* Simulated Shopify theme styles */
+    .shopify-section { padding: 40px 20px; }
+    .page-width { max-width: 1200px; margin: 0 auto; }
+
+    /* Header */
+    .header-wrapper { background: #fff; border-bottom: 1px solid #e5e5e5; }
+    .header { display: flex; align-items: center; justify-content: space-between; padding: 16px 0; }
+    .header__heading { font-size: 24px; font-weight: 700; }
+    .header__nav { display: flex; gap: 24px; }
+    .header__nav a { text-decoration: none; color: #333; font-size: 15px; }
+    .header__nav a:hover { color: #5AB33F; }
+
+    /* Announcement bar */
+    .announcement-bar { background: #5AB33F; color: white; text-align: center; padding: 10px; font-size: 14px; }
+
+    /* Hero / Image banner */
+    .banner { background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); min-height: 400px; display: flex; align-items: center; justify-content: center; text-align: center; }
+    .banner__heading { font-size: 48px; font-weight: 700; margin-bottom: 16px; }
+    .banner__text { font-size: 18px; color: #666; margin-bottom: 24px; }
+    .banner__button { display: inline-block; background: #333; color: white; padding: 14px 32px; border-radius: 4px; text-decoration: none; font-weight: 600; }
+
+    /* Featured collection */
+    .collection { padding: 60px 20px; }
+    .collection__title { font-size: 32px; font-weight: 700; text-align: center; margin-bottom: 40px; }
+    .collection__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 24px; }
+    .product-card { border: 1px solid #e5e5e5; border-radius: 8px; overflow: hidden; transition: box-shadow 0.2s; }
+    .product-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .product-card__image { width: 100%; height: 200px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #999; }
+    .product-card__info { padding: 16px; }
+    .product-card__title { font-size: 16px; font-weight: 600; margin-bottom: 8px; }
+    .product-card__price { font-size: 18px; color: #5AB33F; font-weight: 700; }
+    .product-card__vendor { font-size: 13px; color: #999; margin-bottom: 4px; }
+
+    /* Rich text section */
+    .rich-text { text-align: center; max-width: 700px; margin: 0 auto; padding: 60px 20px; }
+    .rich-text__heading { font-size: 28px; font-weight: 700; margin-bottom: 16px; }
+    .rich-text__text { font-size: 16px; line-height: 1.6; color: #666; }
+
+    /* Newsletter */
+    .newsletter { background: #f9f9f9; padding: 60px 20px; text-align: center; }
+    .newsletter__heading { font-size: 24px; font-weight: 700; margin-bottom: 8px; }
+    .newsletter__text { color: #666; margin-bottom: 24px; }
+    .newsletter__form { display: flex; gap: 8px; max-width: 400px; margin: 0 auto; }
+    .newsletter__input { flex: 1; padding: 12px 16px; border: 1px solid #ddd; border-radius: 4px; font-size: 15px; }
+    .newsletter__button { padding: 12px 24px; background: #5AB33F; color: white; border: none; border-radius: 4px; font-weight: 600; cursor: pointer; }
+
+    /* Footer */
+    .footer { background: #333; color: white; padding: 40px 20px; }
+    .footer__grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 32px; max-width: 1200px; margin: 0 auto; }
+    .footer__heading { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
+    .footer__links { list-style: none; }
+    .footer__links li { margin-bottom: 8px; }
+    .footer__links a { color: #aaa; text-decoration: none; font-size: 14px; }
+    .footer__links a:hover { color: white; }
+    .footer__copyright { text-align: center; padding-top: 32px; border-top: 1px solid #555; margin-top: 32px; color: #aaa; font-size: 13px; max-width: 1200px; margin-left: auto; margin-right: auto; }
+  </style>
+</head>
+<body>
+  <!-- Simulated Shopify theme output with editor attributes -->
+
+  <!-- Announcement Bar Section -->
+  <div id="shopify-section-announcement-bar" class="shopify-section shopify-section-group-header-group"
+       data-shopify-editor-section='{"type":"announcement-bar","settings":{"text":"Free shipping on orders over $50!","color_scheme":"accent"},"disabled":false}'>
+    <div class="announcement-bar" role="region" aria-label="Announcement">
+      <p>Free shipping on orders over $50! Use code <strong>FREESHIP</strong></p>
+    </div>
+  </div>
+
+  <!-- Header Section -->
+  <div id="shopify-section-header" class="shopify-section shopify-section-group-header-group"
+       data-shopify-editor-section='{"type":"header","settings":{"logo_width":120,"menu":"main-menu"},"blocks":{"menu_item_1":{"type":"menu_item","settings":{"label":"Shop","link":"/collections/all"}},"menu_item_2":{"type":"menu_item","settings":{"label":"About","link":"/pages/about"}}},"block_order":["menu_item_1","menu_item_2"]}'>
+    <div class="header-wrapper">
+      <div class="page-width">
+        <header class="header">
+          <h1 class="header__heading">
+            <a href="/">Demo Store</a>
+          </h1>
+          <nav class="header__nav">
+            <a href="/collections/all" id="shopify-block-menu_item_1" class="shopify-block"
+               data-shopify-editor-block='{"type":"menu_item","id":"menu_item_1"}'>Shop</a>
+            <a href="/pages/about" id="shopify-block-menu_item_2" class="shopify-block"
+               data-shopify-editor-block='{"type":"menu_item","id":"menu_item_2"}'>About</a>
+            <a href="/blogs/news">Blog</a>
+            <a href="/pages/contact">Contact</a>
+          </nav>
+        </header>
+      </div>
+    </div>
+  </div>
+
+  <!-- Image Banner Section -->
+  <div id="shopify-section-template--12345__image_banner" class="shopify-section"
+       data-shopify-editor-section='{"type":"image-banner","settings":{"image_overlay_opacity":0,"adapt_height_first_image":false},"blocks":{"heading_1":{"type":"heading","settings":{"heading":"Welcome to Demo Store"}},"text_1":{"type":"text","settings":{"text":"Discover amazing products curated just for you."}},"button_1":{"type":"buttons","settings":{"button_label_1":"Shop Now","button_link_1":"/collections/all"}}},"block_order":["heading_1","text_1","button_1"]}'>
+    <section class="banner">
+      <div class="banner__content page-width">
+        <h2 class="banner__heading"
+            id="shopify-block-heading_1" class="shopify-block"
+            data-shopify-editor-block='{"type":"heading","id":"heading_1"}'>
+          Welcome to Demo Store
+        </h2>
+        <p class="banner__text"
+           id="shopify-block-text_1"
+           data-shopify-editor-block='{"type":"text","id":"text_1"}'>
+          Discover amazing products curated just for you.
+        </p>
+        <a href="/collections/all" class="banner__button"
+           id="shopify-block-button_1"
+           data-shopify-editor-block='{"type":"buttons","id":"button_1"}'>
+          Shop Now
+        </a>
+      </div>
+    </section>
+  </div>
+
+  <!-- Featured Collection Section -->
+  <div id="shopify-section-template--12345__featured_collection" class="shopify-section"
+       data-shopify-editor-section='{"type":"featured-collection","settings":{"title":"Best Sellers","collection":"best-sellers","products_to_show":4,"columns_desktop":4},"disabled":false}'>
+    <section class="collection page-width">
+      <h2 class="collection__title">Best Sellers</h2>
+      <div class="collection__grid">
+        <div class="product-card" data-product-id="12345">
+          <div class="product-card__image">250 x 200</div>
+          <div class="product-card__info">
+            <p class="product-card__vendor">Brand Co.</p>
+            <h3 class="product-card__title">Premium Widget</h3>
+            <p class="product-card__price">$29.99</p>
+          </div>
+        </div>
+        <div class="product-card" data-product-id="12346">
+          <div class="product-card__image">250 x 200</div>
+          <div class="product-card__info">
+            <p class="product-card__vendor">Maker Studio</p>
+            <h3 class="product-card__title">Deluxe Gadget</h3>
+            <p class="product-card__price">$49.99</p>
+          </div>
+        </div>
+        <div class="product-card" data-product-id="12347">
+          <div class="product-card__image">250 x 200</div>
+          <div class="product-card__info">
+            <p class="product-card__vendor">Artisan Goods</p>
+            <h3 class="product-card__title">Handcrafted Item</h3>
+            <p class="product-card__price">$39.99</p>
+          </div>
+        </div>
+        <div class="product-card" data-product-id="12348">
+          <div class="product-card__image">250 x 200</div>
+          <div class="product-card__info">
+            <p class="product-card__vendor">Tech Labs</p>
+            <h3 class="product-card__title">Smart Device</h3>
+            <p class="product-card__price">$99.99</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Rich Text Section -->
+  <div id="shopify-section-template--12345__rich_text" class="shopify-section"
+       data-shopify-editor-section='{"type":"rich-text","settings":{"color_scheme":"background-1"},"blocks":{"heading":{"type":"heading","settings":{"heading":"Our Story"}},"text":{"type":"text","settings":{"text":"We started with a simple idea: make great products accessible to everyone."}}},"block_order":["heading","text"]}'>
+    <section class="rich-text">
+      <h2 class="rich-text__heading"
+          data-shopify-editor-block='{"type":"heading","id":"heading"}'>Our Story</h2>
+      <p class="rich-text__text"
+         data-shopify-editor-block='{"type":"text","id":"text"}'>
+        We started with a simple idea: make great products accessible to everyone. 
+        Founded in 2020, our team of passionate creators works tirelessly to bring you 
+        the finest selection of products from around the world.
+      </p>
+    </section>
+  </div>
+
+  <!-- Newsletter Section -->
+  <div id="shopify-section-template--12345__newsletter" class="shopify-section"
+       data-shopify-editor-section='{"type":"newsletter","settings":{"heading":"Subscribe to our newsletter","text":"Be the first to know about new collections and exclusive offers."},"disabled":false}'>
+    <section class="newsletter">
+      <h2 class="newsletter__heading">Subscribe to our newsletter</h2>
+      <p class="newsletter__text">Be the first to know about new collections and exclusive offers.</p>
+      <form class="newsletter__form">
+        <input type="email" class="newsletter__input" placeholder="Enter your email" aria-label="Email">
+        <button type="submit" class="newsletter__button">Subscribe</button>
+      </form>
+    </section>
+  </div>
+
+  <!-- Footer Section -->
+  <div id="shopify-section-footer" class="shopify-section shopify-section-group-footer-group"
+       data-shopify-editor-section='{"type":"footer","settings":{"color_scheme":"inverse"},"blocks":{"linklist_1":{"type":"link_list","settings":{"heading":"Quick Links","menu":"footer"}},"linklist_2":{"type":"link_list","settings":{"heading":"Customer Care","menu":"customer-care"}}},"block_order":["linklist_1","linklist_2"]}'>
+    <footer class="footer">
+      <div class="footer__grid">
+        <div id="shopify-block-linklist_1" class="shopify-block"
+             data-shopify-editor-block='{"type":"link_list","id":"linklist_1"}'>
+          <h3 class="footer__heading">Quick Links</h3>
+          <ul class="footer__links">
+            <li><a href="/collections/all">Shop All</a></li>
+            <li><a href="/pages/about">About Us</a></li>
+            <li><a href="/blogs/news">Blog</a></li>
+          </ul>
+        </div>
+        <div id="shopify-block-linklist_2" class="shopify-block"
+             data-shopify-editor-block='{"type":"link_list","id":"linklist_2"}'>
+          <h3 class="footer__heading">Customer Care</h3>
+          <ul class="footer__links">
+            <li><a href="/pages/contact">Contact</a></li>
+            <li><a href="/policies/shipping-policy">Shipping</a></li>
+            <li><a href="/policies/refund-policy">Returns</a></li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="footer__heading">About</h3>
+          <p style="color: #aaa; font-size: 14px; line-height: 1.6;">
+            Demo Store is your one-stop shop for premium products. Quality guaranteed.
+          </p>
+        </div>
+      </div>
+      <p class="footer__copyright">&copy; 2026 Demo Store. All rights reserved.</p>
+    </footer>
+  </div>
+</body>
+</html>

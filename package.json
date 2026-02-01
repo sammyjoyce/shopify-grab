@@ -1,0 +1,74 @@
+{
+  "name": "shopify-grab",
+  "version": "0.1.0",
+  "description": "Select context for coding agents directly from your Shopify theme",
+  "keywords": [
+    "agent",
+    "context",
+    "grab",
+    "shopify",
+    "liquid",
+    "theme"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "browser": "dist/index.global.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./core": {
+      "import": {
+        "types": "./dist/core/index.d.ts",
+        "default": "./dist/core/index.js"
+      },
+      "require": {
+        "types": "./dist/core/index.d.cts",
+        "default": "./dist/core/index.cjs"
+      }
+    },
+    "./styles.css": "./dist/styles.css",
+    "./dist/styles.css": "./dist/styles.css"
+  },
+  "files": [
+    "dist",
+    "package.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "css:build": "tailwindcss -i ./src/styles.css -o ./dist/styles.css -m",
+    "css:watch": "tailwindcss -i ./src/styles.css -o ./dist/styles.css -w",
+    "prebuild": "mkdir -p dist && tailwindcss -i ./src/styles.css -o ./dist/styles.css -m",
+    "build": "NODE_ENV=production tsup",
+    "dev": "concurrently \"pnpm:css:watch\" \"tsup --watch --ignore-watch dist\""
+  },
+  "dependencies": {
+    "solid-js": "^1.9.10"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.28.5",
+    "@babel/preset-typescript": "^7.28.5",
+    "@tailwindcss/cli": "^4.1.17",
+    "@types/node": "^20.19.23",
+    "babel-preset-solid": "^1.9.10",
+    "clsx": "^2.1.1",
+    "concurrently": "^9.1.2",
+    "esbuild-plugin-babel": "^0.2.3",
+    "tailwind-merge": "^2.5.5",
+    "tailwindcss": "^4.1.0",
+    "tsup": "^8.2.4",
+    "typescript": "^5.9.3"
+  }
+}

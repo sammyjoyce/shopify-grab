@@ -1,0 +1,172 @@
+import { VERSION } from "../constants.js";
+
+const LEXICAL_EDITOR_MIME_TYPE = "application/x-lexical-editor";
+const SHOPIFY_GRAB_MIME_TYPE = "application/x-shopify-grab";
+
+interface CopyContentOptions {
+  onSuccess?: () => void;
+  name?: string;
+}
+
+interface ShopifyGrabMetadata {
+  version: string;
+  content: string;
+  timestamp: number;
+}
+
+interface LexicalNode {
+  detail: number;
+  format: number;
+  mode: string;
+  style: string;
+  text: string;
+  type: string;
+  version: number;
+  mentionName?: string;
+  typeaheadType?: Record<string, unknown>;
+  storedKey?: string;
+  metadata?: Record<string, unknown>;
+  source?: string;
+}
+
+const generateUuid = (): string => {
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (char) => {
+    const random = (Math.random() * 16) | 0;
+    const value = char === "x" ? random : (random & 0x3) | 0x8;
+    return value.toString(16);
+  });
+};
+
+const createMentionNode = (
+  displayName: string,
+  mentionKey: string,
+  typeaheadType: Record<string, unknown>,
+  metadata: Record<string, unknown>,
+): LexicalNode => ({
+  detail: 1,
+  format: 0,
+  mode: "segmented",
+  style: "",
+  text: `@${displayName}`,
+  type: "mention",
+  version: 1,
+  mentionName: displayName,
+  typeaheadType,
+  storedKey: mentionKey,
+  metadata,
+  source: "chat",
+});
+
+const createTextNode = (text: string): LexicalNode => ({
+  detail: 0,
+  format: 0,
+  mode: "normal",
+  style: "",
+  text,
+  type: "text",
+  version: 1,
+});
+
+// HACK: Cursor's Lexical editor only reads content from registered commands/files,
+// not from embedded clipboard data. We include the content after the mention chip
+// so Cursor can actually read it.
+const createLexicalClipboardData = (
+  content: string,
+  elementName: string,
+): { plainText: string; htmlContent: string; lexicalData: string } => {
+  const mentionKey = String(Math.floor(Math.random() * 10000));
+  const namespaceUuid = generateUuid();
+  const displayName = `<${elementName}>`;
+
+  const typeaheadType = {
+    case: "file",
+    path: `${displayName}.tsx`,
+    content,
+  };
+
+  const selectedOption = {
+    key: displayName,
+    type: typeaheadType,
+    payload: { file: { path: `${displayName}.tsx`, content } },
+    id: generateUuid(),
+    name: displayName,
+    _score: 20,
+    isSlash: false,
+    labelMatch: [{ start: 0, end: 2 }],
+  };
+
+  const mentionMetadata = {
+    selection: { type: 0 },
+    selectedOption,
+  };
+
+  const escapedMentionMetadata = JSON.stringify(mentionMetadata).replace(
+    /"/g,
+    "&quot;",
+  );
+
+  return {
+    plainText: `@${displayName}\n\n${content}\n`,
+    htmlContent: `<meta charset='utf-8'><span data-mention-key="${mentionKey}" data-lexical-mention="true" data-mention-name="${displayName}" data-typeahead-type="[object Object]" data-mention-metadata="${escapedMentionMetadata}">@${displayName}</span><pre><code>${content}</code></pre>`,
+    lexicalData: JSON.stringify({
+      namespace: `chat-input${namespaceUuid}-pane`,
+      nodes: [
+        createMentionNode(
+          displayName,
+          mentionKey,
+          typeaheadType,
+          mentionMetadata,
+        ),
+        createTextNode(`\n\n${content}`),
+      ],
+    }),
+  };
+};
+
+export const copyContent = (
+  content: string,
+  options?: CopyContentOptions,
+): boolean => {
+  const elementName = options?.name ?? "div";
+  const { plainText, htmlContent, lexicalData } = createLexicalClipboardData(
+    content,
+    elementName,
+  );
+  const reactGrabMetadata: ShopifyGrabMetadata = {
+    version: VERSION,
+    content,
+    timestamp: Date.now(),
+  };
+
+  const copyHandler = (event: ClipboardEvent) => {
+    event.preventDefault();
+    event.clipboardData?.setData("text/plain", plainText);
+    event.clipboardData?.setData("text/html", htmlContent);
+    event.clipboardData?.setData(LEXICAL_EDITOR_MIME_TYPE, lexicalData);
+    event.clipboardData?.setData(
+      SHOPIFY_GRAB_MIME_TYPE,
+      JSON.stringify(reactGrabMetadata),
+    );
+  };
+
+  document.addEventListener("copy", copyHandler);
+
+  const textarea = document.createElement("textarea");
+  textarea.value = content;
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  textarea.ariaHidden = "true";
+  document.body.appendChild(textarea);
+  textarea.select();
+
+  try {
+    const didCopySucceed = document.execCommand("copy");
+    if (didCopySucceed) {
+      options?.onSuccess?.();
+    }
+    return didCopySucceed;
+  } finally {
+    document.removeEventListener("copy", copyHandler);
+    textarea.remove();
+  }
+};
