@@ -27,7 +27,7 @@ Add this to your `theme.liquid` layout file inside `<head>`:
 
 ```liquid
 {% if request.design_mode or settings.enable_dev_tools %}
-  <script src="https://unpkg.com/shopify-grab/dist/index.global.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@andsam/shopify-grab/dist/index.global.js" crossorigin="anonymous"></script>
 {% endif %}
 ```
 
@@ -37,7 +37,7 @@ Create a snippet `snippets/shopify-grab.liquid`:
 
 ```liquid
 {% if request.design_mode %}
-  <script src="https://unpkg.com/shopify-grab/dist/index.global.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@andsam/shopify-grab/dist/index.global.js" crossorigin="anonymous"></script>
 {% endif %}
 ```
 
@@ -48,7 +48,7 @@ Then render it in your layout: `{% render 'shopify-grab' %}`
 If you're building a Shopify app, include the script in your theme app extension's block:
 
 ```liquid
-<script src="https://unpkg.com/shopify-grab/dist/index.global.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@andsam/shopify-grab/dist/index.global.js" crossorigin="anonymous"></script>
 ```
 
 ## Usage
