@@ -16,12 +16,23 @@ const BLOCK_ATTR = "data-shopify-editor-block";
 const SECTION_ID_ATTR = "data-section-id";
 const SECTION_TYPE_ATTR = "data-section-type";
 
+// Attributes that are noise in context output
+const SKIP_ATTRS = new Set([
+  SECTION_ATTR,
+  BLOCK_ATTR,
+  "data-shopify-editor-section",
+  "data-shopify-editor-block",
+]);
+
 interface ShopifyEditorSectionData {
   type?: string;
   id?: string;
   disabled?: boolean;
   settings?: Record<string, unknown>;
-  blocks?: Record<string, { type?: string; settings?: Record<string, unknown> }>;
+  blocks?: Record<
+    string,
+    { type?: string; settings?: Record<string, unknown> }
+  >;
   block_order?: string[];
 }
 
@@ -52,6 +63,17 @@ const parseEditorAttribute = <T>(element: Element, attr: string): T | null => {
   }
 };
 
+/**
+ * Strip Shopify's random hash suffixes from section type names.
+ * "full_screen_section_Gh8Vpf" -> "full_screen_section"
+ * "header" -> "header"
+ * "featured-collection" -> "featured-collection"
+ *
+ * Shopify appends _[A-Za-z0-9]{6} when sections are created via the editor.
+ */
+const stripSectionHash = (type: string): string =>
+  type.replace(/_[A-Za-z0-9]{5,8}$/, "");
+
 const inferSectionTypeFromId = (sectionId: string): string | null => {
   // Shopify section IDs follow patterns like:
   // "template--12345__header" -> type is "header"
@@ -59,15 +81,14 @@ const inferSectionTypeFromId = (sectionId: string): string | null => {
   // "shopify-section-template--12345__featured-collection" -> type is "featured-collection"
   const cleaned = sectionId.replace(/^shopify-section-/, "");
   const match = cleaned.match(/__(.+?)(?:-\d+)?$/);
-  if (match) return match[1];
+  if (match) return stripSectionHash(match[1]);
 
   // If no __ pattern, the id itself might be the type
-  if (!cleaned.includes("--")) return cleaned;
+  if (!cleaned.includes("--")) return stripSectionHash(cleaned);
   return null;
 };
 
 const findNearestSection = (element: Element): Element | null => {
-  // Walk up looking for section markers
   let current: Element | null = element;
   while (current) {
     if (
@@ -92,7 +113,6 @@ const findNearestBlock = (element: Element): Element | null => {
     ) {
       return current;
     }
-    // Stop at section boundary
     if (
       current.hasAttribute(SECTION_ATTR) ||
       current.hasAttribute(SECTION_ID_ATTR) ||
@@ -116,30 +136,34 @@ const getShopifyContext = (element: Element): ShopifyContext => {
     snippetName: null,
   };
 
-  // Find nearest block
   const blockEl = findNearestBlock(element);
   if (blockEl) {
-    const blockData = parseEditorAttribute<ShopifyEditorBlockData>(blockEl, BLOCK_ATTR);
+    const blockData = parseEditorAttribute<ShopifyEditorBlockData>(
+      blockEl,
+      BLOCK_ATTR,
+    );
     if (blockData) {
-      ctx.blockType = blockData.type ?? null;
+      ctx.blockType = blockData.type ? stripSectionHash(blockData.type) : null;
       ctx.blockId = blockData.id ?? null;
     }
-    // Also check the id attribute
     if (!ctx.blockId && blockEl.id?.startsWith("shopify-block-")) {
       ctx.blockId = blockEl.id.replace("shopify-block-", "");
     }
   }
 
-  // Find nearest section
   const sectionEl = findNearestSection(element);
   if (sectionEl) {
-    const sectionData = parseEditorAttribute<ShopifyEditorSectionData>(sectionEl, SECTION_ATTR);
+    const sectionData = parseEditorAttribute<ShopifyEditorSectionData>(
+      sectionEl,
+      SECTION_ATTR,
+    );
     if (sectionData) {
-      ctx.sectionType = sectionData.type ?? null;
+      ctx.sectionType = sectionData.type
+        ? stripSectionHash(sectionData.type)
+        : null;
       ctx.sectionId = sectionData.id ?? null;
     }
 
-    // Fallback: check data-section-id and data-section-type
     if (!ctx.sectionId) {
       ctx.sectionId = sectionEl.getAttribute(SECTION_ID_ATTR);
     }
@@ -147,7 +171,6 @@ const getShopifyContext = (element: Element): ShopifyContext => {
       ctx.sectionType = sectionEl.getAttribute(SECTION_TYPE_ATTR);
     }
 
-    // Fallback: infer type from section element's id
     if (!ctx.sectionType && sectionEl.id) {
       const cleanId = sectionEl.id.replace(/^shopify-section-/, "");
       ctx.sectionType = inferSectionTypeFromId(cleanId);
@@ -156,13 +179,11 @@ const getShopifyContext = (element: Element): ShopifyContext => {
       ctx.sectionType = inferSectionTypeFromId(ctx.sectionId);
     }
 
-    // Derive file paths
     if (ctx.sectionType) {
       ctx.sectionFile = `sections/${ctx.sectionType}.liquid`;
     }
   }
 
-  // Check for snippet patterns (common data attributes)
   const snippetEl = findNearestSnippet(element);
   if (snippetEl) {
     ctx.snippetName = snippetEl;
@@ -172,19 +193,16 @@ const getShopifyContext = (element: Element): ShopifyContext => {
 };
 
 const findNearestSnippet = (element: Element): string | null => {
-  // Some themes mark snippets with data-snippet or similar conventions
   let current: Element | null = element;
   while (current) {
     const snippet = current.getAttribute("data-snippet");
     if (snippet) return snippet;
 
-    // Check for data-shopify-type="snippet" pattern
     const shopifyType = current.getAttribute("data-shopify-type");
     if (shopifyType === "snippet") {
       return current.getAttribute("data-shopify-name") ?? null;
     }
 
-    // Stop at section boundary
     if (
       current.hasAttribute(SECTION_ATTR) ||
       current.classList?.contains("shopify-section")
@@ -197,7 +215,6 @@ const findNearestSnippet = (element: Element): string | null => {
 };
 
 export const getComponentDisplayName = (element: Element): string | null => {
-  // Try profiler first for the most specific source info
   if (profilerHasProfile()) {
     const best = getBestSourceForElement(element);
     if (best) {
@@ -206,7 +223,6 @@ export const getComponentDisplayName = (element: Element): string | null => {
     }
   }
 
-  // Fallback to DOM-based detection
   const ctx = getShopifyContext(element);
 
   if (ctx.blockType && ctx.sectionType) {
@@ -227,7 +243,6 @@ export const getNearestComponentName = async (
   return getComponentDisplayName(element);
 };
 
-// StackFrame-like interface for compatibility
 interface ShopifyStackFrame {
   functionName: string | null;
   fileName: string | null;
@@ -239,7 +254,6 @@ interface ShopifyStackFrame {
 export const getStack = async (
   element: Element,
 ): Promise<ShopifyStackFrame[]> => {
-  // Use profiler data if available (provides file + line like React's bippy)
   if (profilerHasProfile()) {
     const sources = getSourceForElement(element);
     if (sources && sources.length > 0) {
@@ -248,7 +262,7 @@ export const getStack = async (
         fileName: loc.file,
         lineNumber: loc.line,
         columnNumber: loc.col,
-        isServer: true, // Liquid is always server-rendered
+        isServer: true,
       }));
     }
   }
@@ -259,10 +273,11 @@ export const getStack = async (
  * Extract a human-readable component name from a Liquid file path.
  * "sections/header.liquid" -> "header"
  * "snippets/product-card.liquid" -> "product-card"
- * "layout/theme.liquid" -> "theme"
  */
 const extractComponentName = (file: string): string | null => {
-  const match = file.match(/(?:sections|snippets|layout|templates|blocks)\/([^/.]+)/);
+  const match = file.match(
+    /(?:sections|snippets|layout|templates|blocks)\/([^/.]+)/,
+  );
   return match ? match[1] : null;
 };
 
@@ -281,7 +296,7 @@ export const getElementContext = async (
   const { maxLines = 3 } = options;
   const html = getHTMLPreview(element);
 
-  // If profiler data is available, use it for rich source context (like bippy for React)
+  // If profiler data is available, use it for rich source context
   if (profilerHasProfile()) {
     const sources = getSourceForElement(element);
     if (sources && sources.length > 0) {
@@ -289,78 +304,55 @@ export const getElementContext = async (
 
       for (const loc of sources.slice(0, maxLines)) {
         const name = extractComponentName(loc.file);
-        const lineRef = loc.line ? `:${loc.line}${loc.col ? `:${loc.col}` : ""}` : "";
-        const timeRef = loc.renderTimeMs > 0 ? ` (${loc.renderTimeMs.toFixed(1)}ms)` : "";
+        const lineRef = loc.line
+          ? `:${loc.line}${loc.col ? `:${loc.col}` : ""}`
+          : "";
+        const timeRef =
+          loc.renderTimeMs > 0
+            ? ` (${loc.renderTimeMs.toFixed(1)}ms)`
+            : "";
 
         if (name) {
-          contextLines.push(`\n  in ${name} (at ${loc.file}${lineRef})${timeRef}`);
+          contextLines.push(
+            `in ${name} at ${loc.file}${lineRef}${timeRef}`,
+          );
         } else {
-          contextLines.push(`\n  at ${loc.file}${lineRef}${timeRef}`);
+          contextLines.push(`at ${loc.file}${lineRef}${timeRef}`);
         }
       }
 
-      // Add render time summary
       const renderTime = getRenderTimeForElement(element);
       if (renderTime !== null && renderTime > 0) {
-        contextLines.push(`\n  render: ${renderTime.toFixed(1)}ms`);
+        contextLines.push(`render: ${renderTime.toFixed(1)}ms`);
       }
 
-      return `${html}${contextLines.join("")}`;
+      return `${html}\n${contextLines.join("\n")}`;
     }
   }
 
-  // Fallback: use DOM-based detection (data attributes, classes)
+  // Fallback: DOM-based detection
   const ctx = getShopifyContext(element);
   const contextLines: string[] = [];
 
-  if (ctx.sectionFile) {
-    contextLines.push(`\n  in section "${ctx.sectionType}" (${ctx.sectionFile})`);
+  if (ctx.sectionType) {
+    contextLines.push(`in ${ctx.sectionType} at ${ctx.sectionFile}`);
   }
 
   if (ctx.blockType) {
-    const blockRef = ctx.blockId ? ` [${ctx.blockId}]` : "";
-    contextLines.push(`\n  in block "${ctx.blockType}"${blockRef}`);
+    contextLines.push(`in block "${ctx.blockType}"`);
   }
 
   if (ctx.snippetName) {
-    contextLines.push(`\n  in snippet "${ctx.snippetName}" (snippets/${ctx.snippetName}.liquid)`);
-  }
-
-  if (ctx.sectionId && !ctx.sectionFile) {
-    contextLines.push(`\n  in section [${ctx.sectionId}]`);
+    contextLines.push(
+      `in ${ctx.snippetName} at snippets/${ctx.snippetName}.liquid`,
+    );
   }
 
   if (contextLines.length > 0) {
-    return `${html}${contextLines.slice(0, maxLines).join("")}`;
+    return `${html}\n${contextLines.slice(0, maxLines).join("\n")}`;
   }
 
-  return getFallbackContext(element);
-};
-
-const getFallbackContext = (element: Element): string => {
-  const tagName = element.tagName.toLowerCase();
-
-  if (!(element instanceof HTMLElement)) {
-    const attrsHint = formatPriorityAttrs(element, {
-      truncate: false,
-      maxAttrs: PREVIEW_PRIORITY_ATTRS.length,
-    });
-    return `<${tagName}${attrsHint} />`;
-  }
-
-  const text = element.innerText?.trim() ?? element.textContent?.trim() ?? "";
-
-  let attrsText = "";
-  for (const { name, value } of element.attributes) {
-    attrsText += ` ${name}="${value}"`;
-  }
-
-  const truncatedText = text.length > 100 ? `${text.slice(0, 100)}...` : text;
-
-  if (truncatedText.length > 0) {
-    return `<${tagName}${attrsText}>\n  ${truncatedText}\n</${tagName}>`;
-  }
-  return `<${tagName}${attrsText} />`;
+  return html;
 };
 
 const truncateAttrValue = (value: string): string =>
@@ -392,64 +384,112 @@ const formatPriorityAttrs = (
   return priorityAttrs.length > 0 ? ` ${priorityAttrs.join(" ")}` : "";
 };
 
+/**
+ * Get only the direct (shallow) text content of an element,
+ * ignoring text from child elements. This avoids dumping all
+ * descendant marketing copy for container elements.
+ */
+const getShallowText = (element: Element): string => {
+  const parts: string[] = [];
+  for (const node of element.childNodes) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      const text = node.textContent?.trim();
+      if (text) parts.push(text);
+    }
+  }
+  return parts.join(" ");
+};
+
+/**
+ * Get meaningful text for an element. Prefers shallow text for containers
+ * (elements with child elements). Falls back to innerText for leaf elements.
+ * Caps output at maxLen characters.
+ */
+const getElementText = (element: Element, maxLen = 80): string => {
+  if (!(element instanceof HTMLElement)) return "";
+
+  // For elements with children, only get direct text to avoid noise
+  const hasChildElements = element.querySelector(":scope > *") !== null;
+  const raw = hasChildElements
+    ? getShallowText(element)
+    : (element.innerText?.trim() ?? "");
+
+  if (!raw) return "";
+  return raw.length > maxLen ? `${raw.slice(0, maxLen)}...` : raw;
+};
+
+/**
+ * Format key attributes for an element. Keeps class names intact,
+ * skips Shopify editor JSON blobs, and respects the priority list.
+ */
+const formatAttrs = (element: Element): string => {
+  const parts: string[] = [];
+
+  // Always include class if present (full value, no truncation for classes)
+  const cls = element.getAttribute("class");
+  if (cls) {
+    const trimmed = cls.trim().replace(/\s+/g, " ");
+    parts.push(`class="${trimmed}"`);
+  }
+
+  // Add other priority attrs
+  for (const name of PREVIEW_PRIORITY_ATTRS) {
+    if (name === "class") continue;
+    if (parts.length >= PREVIEW_MAX_ATTRS + 1) break;
+    const value = element.getAttribute(name);
+    if (value) {
+      parts.push(`${name}="${truncateAttrValue(value)}"`);
+    }
+  }
+
+  // Include href for links (very useful for agents)
+  if (
+    !parts.some((p) => p.startsWith("href=")) &&
+    element.hasAttribute("href")
+  ) {
+    const href = element.getAttribute("href") ?? "";
+    parts.push(`href="${truncateAttrValue(href)}"`);
+  }
+
+  // Include src for images/scripts
+  if (
+    !parts.some((p) => p.startsWith("src=")) &&
+    element.hasAttribute("src")
+  ) {
+    const src = element.getAttribute("src") ?? "";
+    parts.push(`src="${truncateAttrValue(src)}"`);
+  }
+
+  return parts.length > 0 ? ` ${parts.join(" ")}` : "";
+};
+
+/**
+ * Generate a clean HTML preview that is useful for coding agents.
+ *
+ * Goals:
+ * - Full class names (never truncated - agents need these for selectors)
+ * - Shallow text only (no deep innerText dumps for containers)
+ * - Skip Shopify editor JSON attributes
+ * - Compact single-element output matching react-grab style
+ */
 const getHTMLPreview = (element: Element): string => {
   const tagName = element.tagName.toLowerCase();
+
   if (!(element instanceof HTMLElement)) {
-    const attrsHint = formatPriorityAttrs(element);
+    const attrsHint = formatPriorityAttrs(element, {
+      truncate: false,
+      maxAttrs: PREVIEW_PRIORITY_ATTRS.length,
+    });
     return `<${tagName}${attrsHint} />`;
   }
-  const text = element.innerText?.trim() ?? element.textContent?.trim() ?? "";
 
-  let attrsText = "";
-  for (const { name, value } of element.attributes) {
-    // Skip verbose Shopify editor attributes from preview
-    if (name === SECTION_ATTR || name === BLOCK_ATTR) continue;
-    attrsText += ` ${name}="${truncateAttrValue(value)}"`;
+  const attrs = formatAttrs(element);
+  const text = getElementText(element);
+
+  if (text) {
+    return `<${tagName}${attrs}>\n  ${text}\n</${tagName}>`;
   }
 
-  const topElements: Array<Element> = [];
-  const bottomElements: Array<Element> = [];
-  let foundFirstText = false;
-
-  const childNodes = Array.from(element.childNodes);
-  for (const node of childNodes) {
-    if (node.nodeType === Node.COMMENT_NODE) continue;
-
-    if (node.nodeType === Node.TEXT_NODE) {
-      if (node.textContent && node.textContent.trim().length > 0) {
-        foundFirstText = true;
-      }
-    } else if (node instanceof Element) {
-      if (!foundFirstText) {
-        topElements.push(node);
-      } else {
-        bottomElements.push(node);
-      }
-    }
-  }
-
-  const formatElements = (elements: Array<Element>): string => {
-    if (elements.length === 0) return "";
-    if (elements.length <= 2) {
-      return elements
-        .map((el) => `<${el.tagName.toLowerCase()} ...>`)
-        .join("\n  ");
-    }
-    return `(${elements.length} elements)`;
-  };
-
-  let content = "";
-  const topElementsStr = formatElements(topElements);
-  if (topElementsStr) content += `\n  ${topElementsStr}`;
-  if (text.length > 0) {
-    const truncatedText = text.length > 100 ? `${text.slice(0, 100)}...` : text;
-    content += `\n  ${truncatedText}`;
-  }
-  const bottomElementsStr = formatElements(bottomElements);
-  if (bottomElementsStr) content += `\n  ${bottomElementsStr}`;
-
-  if (content.length > 0) {
-    return `<${tagName}${attrsText}>${content}\n</${tagName}>`;
-  }
-  return `<${tagName}${attrsText} />`;
+  // For empty/container elements, show a self-closing tag
+  return `<${tagName}${attrs} />`;
 };

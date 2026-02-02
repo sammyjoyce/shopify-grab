@@ -1,6 +1,6 @@
 {
   "name": "@andsam/shopify-grab",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Select context for coding agents directly from your Shopify theme",
   "keywords": [
     "agent",
