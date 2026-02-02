@@ -3,6 +3,12 @@ import {
   PREVIEW_MAX_ATTRS,
   PREVIEW_PRIORITY_ATTRS,
 } from "../constants.js";
+import {
+  getSourceForElement,
+  getBestSourceForElement,
+  getRenderTimeForElement,
+  hasProfile as profilerHasProfile,
+} from "./profiler/index.js";
 
 // Shopify editor data attributes
 const SECTION_ATTR = "data-shopify-editor-section";
@@ -191,6 +197,16 @@ const findNearestSnippet = (element: Element): string | null => {
 };
 
 export const getComponentDisplayName = (element: Element): string | null => {
+  // Try profiler first for the most specific source info
+  if (profilerHasProfile()) {
+    const best = getBestSourceForElement(element);
+    if (best) {
+      const name = extractComponentName(best.file);
+      if (name) return name;
+    }
+  }
+
+  // Fallback to DOM-based detection
   const ctx = getShopifyContext(element);
 
   if (ctx.blockType && ctx.sectionType) {
@@ -223,8 +239,31 @@ interface ShopifyStackFrame {
 export const getStack = async (
   element: Element,
 ): Promise<ShopifyStackFrame[]> => {
-  // No fiber stack for Shopify. Return empty for interface compat.
+  // Use profiler data if available (provides file + line like React's bippy)
+  if (profilerHasProfile()) {
+    const sources = getSourceForElement(element);
+    if (sources && sources.length > 0) {
+      return sources.map((loc) => ({
+        functionName: extractComponentName(loc.file),
+        fileName: loc.file,
+        lineNumber: loc.line,
+        columnNumber: loc.col,
+        isServer: true, // Liquid is always server-rendered
+      }));
+    }
+  }
   return [];
+};
+
+/**
+ * Extract a human-readable component name from a Liquid file path.
+ * "sections/header.liquid" -> "header"
+ * "snippets/product-card.liquid" -> "product-card"
+ * "layout/theme.liquid" -> "theme"
+ */
+const extractComponentName = (file: string): string | null => {
+  const match = file.match(/(?:sections|snippets|layout|templates|blocks)\/([^/.]+)/);
+  return match ? match[1] : null;
 };
 
 export const checkIsSourceComponentName = (name: string): boolean => {
@@ -239,9 +278,39 @@ export const getElementContext = async (
   element: Element,
   options: GetElementContextOptions = {},
 ): Promise<string> => {
-  const ctx = getShopifyContext(element);
+  const { maxLines = 3 } = options;
   const html = getHTMLPreview(element);
 
+  // If profiler data is available, use it for rich source context (like bippy for React)
+  if (profilerHasProfile()) {
+    const sources = getSourceForElement(element);
+    if (sources && sources.length > 0) {
+      const contextLines: string[] = [];
+
+      for (const loc of sources.slice(0, maxLines)) {
+        const name = extractComponentName(loc.file);
+        const lineRef = loc.line ? `:${loc.line}${loc.col ? `:${loc.col}` : ""}` : "";
+        const timeRef = loc.renderTimeMs > 0 ? ` (${loc.renderTimeMs.toFixed(1)}ms)` : "";
+
+        if (name) {
+          contextLines.push(`\n  in ${name} (at ${loc.file}${lineRef})${timeRef}`);
+        } else {
+          contextLines.push(`\n  at ${loc.file}${lineRef}${timeRef}`);
+        }
+      }
+
+      // Add render time summary
+      const renderTime = getRenderTimeForElement(element);
+      if (renderTime !== null && renderTime > 0) {
+        contextLines.push(`\n  render: ${renderTime.toFixed(1)}ms`);
+      }
+
+      return `${html}${contextLines.join("")}`;
+    }
+  }
+
+  // Fallback: use DOM-based detection (data attributes, classes)
+  const ctx = getShopifyContext(element);
   const contextLines: string[] = [];
 
   if (ctx.sectionFile) {
@@ -262,7 +331,6 @@ export const getElementContext = async (
   }
 
   if (contextLines.length > 0) {
-    const { maxLines = 3 } = options;
     return `${html}${contextLines.slice(0, maxLines).join("")}`;
   }
 

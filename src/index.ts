@@ -6,6 +6,31 @@ export {
   DEFAULT_THEME,
 } from "./core/index.js";
 export { generateSnippet } from "./utils/generate-snippet.js";
+
+// Shopify Liquid Profiler - provides bippy-like source introspection
+export {
+  signIn as profilerSignIn,
+  signOut as profilerSignOut,
+  profile as profilerProfile,
+  isAuthenticated as profilerIsAuthenticated,
+  hasProfile as profilerHasProfile,
+  getStatus as profilerGetStatus,
+  onStatusChange as profilerOnStatusChange,
+  getSourceForElement,
+  getBestSourceForElement,
+  getRenderTimeForElement,
+  isShopifyStore,
+  clearCache as profilerClearCache,
+} from "./core/profiler/index.js";
+export type {
+  PageProfile,
+  ProfilerStatus,
+  ProfilerToken,
+  LiquidSourceLocation,
+  SectionSourceMap,
+  SpeedscopeFrame,
+} from "./core/profiler/index.js";
+
 // design-system.tsx removed for Shopify build
 export {
   captureElementScreenshot,

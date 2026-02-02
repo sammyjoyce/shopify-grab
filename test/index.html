@@ -5,6 +5,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Shopify Grab - Test Page</title>
   <script src="../dist/index.global.js"></script>
+  <script>
+    // Shopify Grab Profiler API usage example:
+    //
+    // Sign in to Shopify for profiling (opens popup):
+    //   window.__SHOPIFY_GRAB__.profilerSignIn()
+    //
+    // Fetch profiling data for current page:
+    //   window.__SHOPIFY_GRAB__.profilerProfile()
+    //
+    // Then hover + Cmd/Ctrl+C will include file:line info from Liquid profiling.
+    //
+    // Quick start (run in console):
+    //   const sg = window.__SHOPIFY_GRAB__;
+    //   await sg.profilerSignIn();
+    //   await sg.profilerProfile();
+    //   // Now hover elements to see Liquid source locations!
+    //
+    // Note: Profiling requires a Shopify partner/staff account
+    // and only works on actual Shopify stores, not this static test page.
+
+    // Simulate Shopify.shop for store detection
+    window.Shopify = { shop: 'demo-store.myshopify.com' };
+  </script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #333; }

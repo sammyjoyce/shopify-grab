@@ -24,8 +24,18 @@ import {
   checkIsSourceComponentName,
   getComponentDisplayName,
 } from "./context.js";
-// Shopify: no bippy/source needed. Stubs for interface compatibility.
-const isSourceFile = (_fileName: string): boolean => false;
+// Shopify: Liquid files are always "source files"
+const isSourceFile = (fileName: string): boolean => {
+  if (!fileName) return false;
+  return (
+    fileName.endsWith(".liquid") ||
+    fileName.includes("sections/") ||
+    fileName.includes("snippets/") ||
+    fileName.includes("templates/") ||
+    fileName.includes("layout/") ||
+    fileName.includes("blocks/")
+  );
+};
 const normalizeFileName = (fileName: string): string => fileName;
 import { createNoopApi } from "./noop-api.js";
 import { createEventListenerManager } from "./events.js";
@@ -3216,9 +3226,10 @@ export const init = (rawOptions?: Options): ShopifyGrabAPI => {
         const stack = await getStack(element);
         if (!stack) return null;
         for (const frame of stack) {
-          if (frame.fileName && isSourceFile(frame.fileName)) {
+          // Shopify: all frames are source files (Liquid templates)
+          if (frame.fileName) {
             return {
-              filePath: normalizeFileName(frame.fileName),
+              filePath: frame.fileName,
               lineNumber: frame.lineNumber ?? null,
               componentName:
                 frame.functionName &&
@@ -3294,3 +3305,16 @@ export type {
 
 export { generateSnippet } from "../utils/generate-snippet.js";
 export { copyContent } from "../utils/copy-content.js";
+
+// Profiler exports
+export {
+  signIn as profilerSignIn,
+  signOut as profilerSignOut,
+  profile as profilerProfile,
+  isAuthenticated as profilerIsAuthenticated,
+  hasProfile as profilerHasProfile,
+  getSourceForElement,
+  getBestSourceForElement,
+  getRenderTimeForElement,
+  isShopifyStore,
+} from "./profiler/index.js";

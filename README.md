@@ -78,9 +78,79 @@ Shopify Grab detects theme structure from:
 
 These attributes are automatically present in the Shopify Theme Editor and on storefront preview pages.
 
+## Liquid Profiler (Advanced)
+
+Shopify Grab includes a built-in Liquid profiler that taps into the same profiling API used by Shopify's Theme Inspector Chrome extension. When enabled, it provides **file paths, line numbers, and render times** for every Liquid template, giving you bippy-level source introspection for Shopify themes.
+
+### How it works
+
+1. Authenticates with Shopify Identity (same OAuth flow as Theme Inspector)
+2. Fetches Speedscope-format profiling data from Shopify's servers
+3. Parses the profiling frames to build a source map
+4. Maps DOM elements to their Liquid source files via section/block correlation
+
+### Quick start
+
+```javascript
+const sg = window.__SHOPIFY_GRAB__;
+
+// Sign in with your Shopify partner/staff account (opens popup)
+await sg.profilerSignIn();
+
+// Fetch profiling data for the current page
+await sg.profilerProfile();
+
+// Now hover + Cmd/Ctrl+C includes file:line info!
+// Example output with profiler enabled:
+//
+// <div class="product-card">
+//   Premium Widget
+//   $29.99
+// </div>
+//   in featured-collection (at sections/featured-collection.liquid:42) (15.2ms)
+//   in product-card (at snippets/product-card.liquid:3) (4.1ms)
+//   render: 19.3ms
+```
+
+### Profiler API
+
+```javascript
+const sg = window.__SHOPIFY_GRAB__;
+
+// Authentication
+await sg.profilerSignIn();      // Sign in (opens OAuth popup)
+sg.profilerSignOut();            // Sign out and clear tokens
+sg.profilerIsAuthenticated();    // Check if signed in
+
+// Profiling
+const profile = await sg.profilerProfile();  // Fetch profile for current page
+sg.profilerHasProfile();                     // Check if profile data loaded
+sg.profilerClearCache();                     // Clear cached profiles
+
+// Element source resolution
+sg.getSourceForElement(element);       // Full source stack (layout -> template -> section -> snippet)
+sg.getBestSourceForElement(element);   // Most specific source location
+sg.getRenderTimeForElement(element);   // Section render time in ms
+
+// Status monitoring
+sg.profilerGetStatus();  // { state: "idle" | "authenticating" | "authenticated" | "fetching" | "ready" | "error" }
+sg.profilerOnStatusChange((status) => console.log(status));
+```
+
+### Requirements
+
+- A Shopify partner or staff account with access to the store
+- The store must be accessible (live or via `shopify theme dev`)
+- Profiling is read-only and does not affect store performance
+
+### Without the profiler
+
+Shopify Grab works without authentication, using DOM-based detection (data attributes, section IDs, class patterns). The profiler just adds richer source context.
+
 ## Features
 
 - Same overlay UI as react-grab (crosshair, selection highlight, floating label)
+- **Liquid profiler** for file:line source context (like bippy for React)
 - Shopify green color scheme
 - Canvas-based overlay for smooth 60fps animations
 - Shadow DOM isolation (doesn't conflict with theme styles)
@@ -88,6 +158,7 @@ These attributes are automatically present in the Shopify Theme Editor and on st
 - Right-click context menu with Copy, Copy HTML, Copy Screenshot
 - Cursor IDE Lexical editor clipboard format support
 - Plugin system for customization
+- Render time display per section
 
 ## API
 
@@ -106,6 +177,10 @@ api.copyElement(document.querySelector('.product-card'));
 
 // Get display name for an element
 api.getDisplayName(element); // "featured-collection" or "header/menu"
+
+// Get source info (uses profiler when available)
+const source = await api.getSource(element);
+// { filePath: "sections/header.liquid", lineNumber: 42, componentName: "header" }
 ```
 
 ## License
