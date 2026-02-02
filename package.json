@@ -1,6 +1,6 @@
 {
   "name": "@andsam/shopify-grab",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Select context for coding agents directly from your Shopify theme",
   "keywords": [
     "agent",
@@ -11,6 +11,14 @@
     "theme"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sammyjoyce/shopify-grab.git"
+  },
+  "homepage": "https://github.com/sammyjoyce/shopify-grab#readme",
+  "bugs": {
+    "url": "https://github.com/sammyjoyce/shopify-grab/issues"
+  },
   "type": "module",
   "main": "dist/index.js",
   "module": "dist/index.js",
